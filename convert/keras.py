@@ -18,7 +18,6 @@ class KerasONNX():
             os.makedirs("tmp/" + project_id)
 
         self.temp_model_location = os.path.join('tmp', self.model_path)
-        print(self.model_path, self.temp_model_location)
         self.save_temp()
 
         self.model = load_model(self.temp_model_location)
