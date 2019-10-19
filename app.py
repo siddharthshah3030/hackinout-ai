@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify
 from convert.keras import KerasONNX
 import onnxruntime as rt
@@ -5,6 +6,7 @@ import numpy as np
 from PIL import Image
 import requests
 from google.cloud import storage
+from io import BytesIO, StringIO
 
 
 from config import bucketName
@@ -41,12 +43,21 @@ def image_classification_inference(project_id):
     model_path = request.get_json()['model_path']
     image_url = request.get_json()['image_url']
 
-    sess = rt.InferenceSession(model_path)
+    model_path = project_id + "/" + model_path
+
+    if not os.path.isfile("tmp/"+model_path):
+        gcs = storage.Client()
+        bucket = gcs.get_bucket(bucketName)
+        blob = bucket.blob(model_path)
+        blob.download_to_filename("tmp/" + model_path)
+
+    sess = rt.InferenceSession("tmp/" + model_path)
     input_name = sess.get_inputs()[0].name
     label_name = sess.get_outputs()[0].name
     expected_shape = sess.get_inputs()[0].shape
 
     response = requests.get(image_url, stream=True)
+    response.raise_for_status()
     response.raw.decode_content = True
     image = preprocess(response.raw, shape=(100, 100, 1), grayscale=True, normalize=True)
 
