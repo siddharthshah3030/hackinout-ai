@@ -64,7 +64,7 @@ def image_classification_inference(project_id):
     response = requests.get(image_url, stream=True)
     response.raise_for_status()
     response.raw.decode_content = True
-    image = preprocess(response.raw, shape=(100, 100, 1), grayscale=True, normalize=True)
+    image = preprocess(response.raw, shape=(project["height"], project["width"], project["channels"]), grayscale=True, normalize=True)
 
     result = sess.run([], {input_name: image})
 
