@@ -6,6 +6,7 @@ from PIL import Image
 import requests
 from google.cloud import storage
 
+
 from config import bucketName
 
 app = Flask(__name__)
@@ -19,12 +20,11 @@ def hello_world():
 def keras_to_onnx(project_id):
     # TODO: Get model information from project id @model_path and @save_path
     model_path = request.get_json()['model_path']
-    save_path = request.get_json()['save_path']
 
     success = False 
 
     try:
-        keras_onnx = KerasONNX(model_path, save_path)
+        keras_onnx = KerasONNX(project_id + "/" + model_path)
         keras_onnx.convert()
         keras_onnx.save()
         success = True
@@ -50,8 +50,6 @@ def image_classification_inference(project_id):
     response.raw.decode_content = True
     image = preprocess(response.raw, shape=(100, 100, 1), grayscale=True, normalize=True)
 
-    print(image.shape)
-
     result = sess.run([], {input_name: image})
 
     # TODO: Remap the classes
@@ -66,7 +64,6 @@ def preprocess(image_url, shape=(224, 224, 3), grayscale=False, normalize=True):
     if (grayscale):
         image = image.convert('L')
 
-    print(shape)
     image = image.resize(shape[:-1])
     image = np.array(image)
 
@@ -82,27 +79,23 @@ def preprocess(image_url, shape=(224, 224, 3), grayscale=False, normalize=True):
 
 @app.route('/upload/<project_id>', methods=['POST'])
 def upload(project_id):
-    """Process the uploaded file and upload it to Google Cloud Storage."""
+    # TODO: get all information about the project using project_id
     uploaded_file = request.files.get('file')
 
     if not uploaded_file:
         return 'No file uploaded.', 400
 
-    # Create a Cloud Storage client.
     gcs = storage.Client()
 
-    # Get the bucket that the file will be uploaded to.
     bucket = gcs.get_bucket(bucketName)
 
-    # Create a new blob and upload the file's content.
-    blob = bucket.blob(uploaded_file.filename)
+    blob = bucket.blob(project_id + "/" + uploaded_file.filename)
 
     blob.upload_from_string(
         uploaded_file.read(),
         content_type=uploaded_file.content_type
     )
 
-    # The public URL can be used to directly access the uploaded file via HTTP.
     return blob.public_url
 
 
