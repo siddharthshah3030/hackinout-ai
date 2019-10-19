@@ -4,6 +4,9 @@ import onnxruntime as rt
 import numpy as np
 from PIL import Image
 import requests
+from google.cloud import storage
+
+from config import bucketName
 
 app = Flask(__name__)
 
@@ -75,6 +78,33 @@ def preprocess(image_url, shape=(224, 224, 3), grayscale=False, normalize=True):
     image = image[np.newaxis]
 
     return image
+
+
+@app.route('/upload/<project_id>', methods=['POST'])
+def upload(project_id):
+    """Process the uploaded file and upload it to Google Cloud Storage."""
+    uploaded_file = request.files.get('file')
+
+    if not uploaded_file:
+        return 'No file uploaded.', 400
+
+    # Create a Cloud Storage client.
+    gcs = storage.Client()
+
+    # Get the bucket that the file will be uploaded to.
+    bucket = gcs.get_bucket(bucketName)
+
+    # Create a new blob and upload the file's content.
+    blob = bucket.blob(uploaded_file.filename)
+
+    blob.upload_from_string(
+        uploaded_file.read(),
+        content_type=uploaded_file.content_type
+    )
+
+    # The public URL can be used to directly access the uploaded file via HTTP.
+    return blob.public_url
+
 
 if __name__ == '__main__':
     app.run(debug=True)
