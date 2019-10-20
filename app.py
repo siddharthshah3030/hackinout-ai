@@ -116,7 +116,7 @@ def upload(project_id):
 
 
 def get_project_info(project_id):
-    api_base = "http://172.16.17.232:1337"
+    api_base = "http://34.67.52.131:1337"
     r = requests.get(api_base+"/projects/"+project_id)
     
     return r.json()
