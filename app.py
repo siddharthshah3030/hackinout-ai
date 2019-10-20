@@ -9,7 +9,7 @@ from google.cloud import storage
 from io import BytesIO, StringIO
 from flask_cors import CORS
 
-from transferlearning import TransferLearning
+from transferlearning.utils import TransferLearning
 from config import bucketName
 
 app = Flask(__name__)

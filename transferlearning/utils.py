@@ -10,7 +10,7 @@ from keras.utils import to_categorical
 from sklearn.preprocessing import LabelBinarizer
 from keras import optimizers
 from keras.preprocessing.image import ImageDataGenerator
-
+import numpy as np
 
 
 class TransferLearning():
@@ -75,12 +75,12 @@ class TransferLearning():
             if not os.path.exists("../tmp/"+row['label']+"/" + row['path'].split('/')[0]):
                 os.makedirs("../tmp/"+row['label']+"/" + row['path'].split('/')[0])
             
-            image = load_image(row['image'], shape=shape)
+            image = self.load_image(row['image'], shape=shape)
             self.X.append(np.array(image))
             self.y.append(row['label'])
             image.save("../tmp/"+row['label']+"/"+row['path'])
 
-        return X, y
+        return self.X, self.y
 
     def split_data_set(self, X, y, test_size=0.20, shuffle=True):
         X = np.array(X)
@@ -111,16 +111,26 @@ class TransferLearning():
     
     def do_transfer_learning(self, project_id):
         # TODO: project wise customisations
+        print("Getting data from server -------------\n")
         json = self.get_json_data_from_server(project_id)
+        print("Parse json -------------\n")
         data = self.get_data(json)
+        print("Dataframe -------------\n")
         df = self.get_data_frame(data)
 
+        print("Preprocessing and Saving Images -------------\n")
         # TODO: project wise shape
         X, y = self.save_images(df)
 
+
+        print("Split Data -------------\n")
         X_train, X_test, y_train, y_test = self.split_data_set(X, y)
 
         self.model = self.get_resnet_model(2)
         self.compile_model()
+        print("Training the model -------------\n")
         self.train()
+
+        print("Saving the model -------------\n")
+
         self.model.save()
