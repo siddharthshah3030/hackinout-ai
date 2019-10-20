@@ -11,6 +11,9 @@ from sklearn.preprocessing import LabelBinarizer
 from keras import optimizers
 from keras.preprocessing.image import ImageDataGenerator
 import numpy as np
+from keras.applications import ResNet50
+from keras.models import Sequential
+from keras.layers import Dense
 
 
 class TransferLearning():
@@ -38,22 +41,21 @@ class TransferLearning():
 
     def get_data(self, json):
         data = json['classes']['classes']
-        Z = {}
 
         for d in data:
             for item in d['data']:
-                Z['image'] = item['url']
-                Z['label'] = d['name']
-                self.X.append(Z)
+                self.X.append({'image': item['url'], 'label': d['name']})
 
         return self.X
 
+
     def get_data_frame(self, X):
         df = pd.DataFrame(data = X)
-        df['path'] = df['image'].str.split('/').str[-2] + "/" + df['image'].str.split('/').str[-1]
+        df['path'] = df['image'].apply(lambda x: x.replace('https://storage.googleapis.com/deployml/', ''))
         return df
 
     def load_image(self, imagepath, shape=(224,224)):
+        print(imagepath, '------------')
         response = requests.get(imagepath)
         img = Image.open(BytesIO(response.content))
         img = img.resize(shape)
@@ -62,7 +64,7 @@ class TransferLearning():
 
     def get_resnet_model(self, num_classes=2):
         self.model = Sequential()
-        self.model = ResNet50(include_top = False, pooling = 'avg', weights = 'imagenet')
+        self.model.add(ResNet50(include_top = False, pooling = 'avg', weights = 'imagenet'))
         self.model.add(Dense(num_classes, activation = 'softmax'))
         self.model.layers[0].trainable = False
 
@@ -72,13 +74,14 @@ class TransferLearning():
         self.X = []
         self.y = []
         for index, row in df.iterrows():
-            if not os.path.exists("../tmp/"+row['label']+"/" + row['path'].split('/')[0]):
-                os.makedirs("../tmp/"+row['label']+"/" + row['path'].split('/')[0])
+            # if not os.path.exists("../tmp/"+row['label']+"/" + row['path'].split('/')[0]):
+            #     os.makedirs("../tmp/"+row['label']+"/" + row['path'].split('/')[0])
             
+            print(index, row)
             image = self.load_image(row['image'], shape=shape)
             self.X.append(np.array(image))
             self.y.append(row['label'])
-            image.save("../tmp/"+row['label']+"/"+row['path'])
+            # image.save("../tmp/"+row['label']+"/"+row['path'])
 
         return self.X, self.y
 
@@ -126,7 +129,7 @@ class TransferLearning():
         print("Split Data -------------\n")
         X_train, X_test, y_train, y_test = self.split_data_set(X, y)
 
-        self.model = self.get_resnet_model(2)
+        self.model = self.get_resnet_model(1)
         self.compile_model()
         print("Training the model -------------\n")
         self.train()
