@@ -9,6 +9,7 @@ from google.cloud import storage
 from io import BytesIO, StringIO
 from flask_cors import CORS
 
+from transferlearning import TransferLearning
 from config import bucketName
 
 app = Flask(__name__)
@@ -129,6 +130,11 @@ def upload(project_id):
     )
 
     return blob.public_url
+
+@app.route('/transferlearning/<project_id>', methods=['POST'])
+def transfer_learning(project_id):
+    transfer = TransferLearning()
+    transfer.do_transfer_learning(project_id)
 
 
 def get_project_info(project_id):
