@@ -59,11 +59,11 @@ def image_classification_inference(project_id):
     sess = rt.InferenceSession("tmp/" + model_path)
     input_name = sess.get_inputs()[0].name
     label_name = sess.get_outputs()[0].name
-    expected_shape = sess.get_inputs()[0].shape
+    # expected_shape = sess.get_inputs()[0].shape
     output_shape = sess.get_outputs()[0].shape
     output_name = sess.get_outputs()[0].name
 
-    print(input_name, expected_shape, output_name, output_shape)
+    # print(input_name, expected_shape, output_name, output_shape)
 
     response = requests.get(image_url, stream=True)
     response.raise_for_status()
