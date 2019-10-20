@@ -60,19 +60,34 @@ def image_classification_inference(project_id):
     input_name = sess.get_inputs()[0].name
     label_name = sess.get_outputs()[0].name
     expected_shape = sess.get_inputs()[0].shape
+    output_shape = sess.get_outputs()[0].shape
+    output_name = sess.get_outputs()[0].name
+
+    print(input_name, expected_shape, output_name, output_shape)
 
     response = requests.get(image_url, stream=True)
     response.raise_for_status()
     response.raw.decode_content = True
-    image = preprocess(response.raw, shape=(project["height"], project["width"], project["channels"]), grayscale=True, normalize=True)
+    image = preprocess(response.raw, shape=(project["height"], project["width"], project["channels"]), grayscale=project["channels"]<2, normalize=True)
+
+    print(image.shape)
 
     result = sess.run([], {input_name: image})
 
+    # print(result)
+
     # TODO: Remap the classes
     classes = project["classes"]["classes"]
+    # print(project)
     prob = result[0][0]
+    idx = (-prob).argsort()[:5]
+
+    res_class = []
+    for i in idx:
+        res_class.append({ "result": classes[i], "confidence": str(prob[i])})
+
     
-    return jsonify(success=True, result=classes[np.argmax(prob)], confidence=str(prob.max()))
+    return jsonify(success=True, result=res_class)
 
 
 def preprocess(image_url, shape=(224, 224, 3), grayscale=False, normalize=True):
@@ -88,6 +103,7 @@ def preprocess(image_url, shape=(224, 224, 3), grayscale=False, normalize=True):
 
     image = np.array([image])
     image = np.array([image]).reshape(shape)
+    # image = image.transpose(2,0,1)
     image = image[np.newaxis]
 
     return image
@@ -116,7 +132,7 @@ def upload(project_id):
 
 
 def get_project_info(project_id):
-    api_base = "http://172.16.17.232:1337"
+    api_base = "http://34.67.52.131:1337"
     r = requests.get(api_base+"/projects/"+project_id)
     
     return r.json()
